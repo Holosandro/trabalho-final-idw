@@ -1,3 +1,10 @@
+const loginForm = document.getElementById('login-form');
+const loginMensagem = document.getElementById('login-mensagem');
+const logoutBtn = document.getElementById('logout-btn');
+
+const loginView = document.getElementById('login-view');
+const crudView = document.getElementById('crud-view');
+
 const form = document.getElementById('usuario-form');
 const idInput = document.getElementById('usuario-id');
 const nomeInput = document.getElementById('nome');
@@ -6,12 +13,59 @@ const tabela = document.getElementById('usuarios-tabela');
 const mensagem = document.getElementById('mensagem');
 const cancelarEdicaoBtn = document.getElementById('cancelar-edicao');
 
-const API_URL = 'http://localhost:3000/usuarios';
+const API_URL = 'http://localhost:3000';
 
-function mostrarMensagem(texto, erro = false) {
-  mensagem.textContent = texto;
-  mensagem.style.color = erro ? '#b42318' : '#0b5b55';
+function alternarViews(logado) {
+  if (logado) {
+    loginView.style.display = 'none';
+    crudView.style.display = 'flex';
+    logoutBtn.style.display = 'block';
+  } else {
+    loginView.style.display = 'flex';
+    crudView.style.display = 'none';
+    logoutBtn.style.display = 'none';
+  }
 }
+
+function mostrarMensagem(texto, erro = false, elemento = mensagem) {
+  elemento.textContent = texto;
+  elemento.style.color = erro ? '#b42318' : '#0b5b55';
+}
+
+loginForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  
+  const usuario = document.getElementById('usuario').value.trim();
+  const senha = document.getElementById('senha').value.trim();
+
+  const resposta = await fetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ usuario, senha })
+  });
+
+  const data = await resposta.json();
+  if (!resposta.ok) {
+    mostrarMensagem(data.erro || 'Falha no login', true, loginMensagem);
+    return;
+  }
+  
+  mostrarMensagem(data.mensagem, false, loginMensagem);
+  alternarViews(true);
+  carregarUsuarios();
+});
+
+logoutBtn.addEventListener('click', async () => {
+  await fetch(`${API_URL}/auth/logout`, {
+    method: 'POST',
+    credentials: 'include'
+  });
+  alternarViews(false);
+  document.getElementById('usuario').value = '';
+  document.getElementById('senha').value = '';
+  loginMensagem.textContent = '';
+});
 
 function limparFormulario() {
   idInput.value = '';
@@ -20,14 +74,15 @@ function limparFormulario() {
 }
 
 async function carregarUsuarios() {
-  const resposta = await fetch(API_URL);
+  const resposta = await fetch(`${API_URL}/usuarios`, { credentials: 'include' });
   
   if (!resposta.ok) {
+     if (resposta.status === 401) alternarViews(false);
      return;
   }
   
   const usuarios = await resposta.json();
-
+  alternarViews(true);
   tabela.innerHTML = '';
 
   usuarios.forEach((usuario) => {
@@ -41,7 +96,6 @@ async function carregarUsuarios() {
         <button class="acao btn-excluir" data-excluir="${usuario.id}">Excluir</button>
       </td>
     `;
-
     tabela.appendChild(tr);
   });
 }
@@ -56,13 +110,12 @@ async function salvarUsuario(event) {
   };
 
   const metodo = id ? 'PUT' : 'POST';
-  const url = id ? `${API_URL}/${id}` : API_URL;
+  const url = id ? `${API_URL}/usuarios/${id}` : `${API_URL}/usuarios`;
 
   const resposta = await fetch(url, {
     method: metodo,
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(payload)
   });
 
@@ -79,13 +132,11 @@ async function salvarUsuario(event) {
 
 async function excluirUsuario(id) {
   const confirmar = window.confirm('Deseja excluir este usuario?');
+  if (!confirmar) return;
 
-  if (!confirmar) {
-    return;
-  }
-
-  const resposta = await fetch(`${API_URL}/${id}`, {
-    method: 'DELETE'
+  const resposta = await fetch(`${API_URL}/usuarios/${id}`, {
+    method: 'DELETE',
+    credentials: 'include'
   });
 
   if (!resposta.ok) {
@@ -98,11 +149,8 @@ async function excluirUsuario(id) {
 }
 
 async function editarUsuario(id) {
-  const resposta = await fetch(`${API_URL}/${id}`);
-  
-  if (!resposta.ok) {
-     return;
-  }
+  const resposta = await fetch(`${API_URL}/usuarios/${id}`, { credentials: 'include' });
+  if (!resposta.ok) return;
   
   const usuario = await resposta.json();
 
@@ -122,13 +170,8 @@ tabela.addEventListener('click', (event) => {
   const editarId = event.target.getAttribute('data-editar');
   const excluirId = event.target.getAttribute('data-excluir');
 
-  if (editarId) {
-    editarUsuario(editarId);
-  }
-
-  if (excluirId) {
-    excluirUsuario(excluirId);
-  }
+  if (editarId) editarUsuario(editarId);
+  if (excluirId) excluirUsuario(excluirId);
 });
 
 carregarUsuarios();

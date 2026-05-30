@@ -9,9 +9,31 @@
 <body>
   <header class="site-header">
     <h1>Laboratorio CRUD de Usuarios</h1>
+    <button type="button" id="logout-btn" style="display: none; margin: 10px auto; background-color: #6b6257;">Sair (Logout)</button>
   </header>
 
-  <main class="layout">
+  <main id="login-view" class="layout" style="justify-content: center;">
+    <section class="panel" style="max-width: 400px; text-align: center;">
+      <h2>Login</h2>
+      <p style="margin-bottom: 20px; color: #6b6257;">Use <strong>admin</strong> e <strong>123456</strong></p>
+      <form id="login-form">
+        <div class="field" style="text-align: left;">
+          <label for="usuario">Usuário</label>
+          <input type="text" id="usuario" name="usuario" required />
+        </div>
+        <div class="field" style="text-align: left;">
+          <label for="senha">Senha</label>
+          <input type="password" id="senha" name="senha" required />
+        </div>
+        <div class="actions" style="justify-content: center;">
+          <button type="submit">Entrar</button>
+        </div>
+      </form>
+      <p id="login-mensagem" class="mensagem" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <main id="crud-view" class="layout" style="display: none;">
     <section class="panel">
       <h2>Cadastro de Usuario</h2>
 
